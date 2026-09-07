@@ -3,9 +3,6 @@ name: Build SceneKraft
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   windows:
     name: Windows x64
@@ -67,10 +64,10 @@ jobs:
       - name: Package macOS app
         run: |
           cd dist
-          zip -r ../SceneKraft-macOS-arm64.zip SceneKraft.app
+          zip -r ../SceneKraft-macOS.zip SceneKraft.app
 
       - name: Upload macOS app
         uses: actions/upload-artifact@v4
         with:
-          name: SceneKraft-macOS-arm64
-          path: SceneKraft-macOS-arm64.zip
+          name: SceneKraft-macOS
+          path: SceneKraft-macOS.zip
