@@ -1,0 +1,57 @@
+name: Build SceneKraft (macOS)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller
+    
+    - name: Build app (macOS version)
+      run: |
+        # Note: Windows-specific features (WorkerW, registry) disabled on macOS
+        pyinstaller --name SceneKraft \
+          --onefile \
+          --windowed \
+          --icon=favicon.ico \
+          app.py
+    
+    - name: Create DMG archive
+      run: |
+        mkdir -p dist_dmg
+        cp -r dist/SceneKraft.app dist_dmg/
+        hdiutil create -volname "SceneKraft" \
+          -srcfolder dist_dmg \
+          -ov -format UDZO \
+          dist/SceneKraft-macOS.dmg
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: SceneKraft-macOS
+        path: dist/SceneKraft-macOS.dmg
+    
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: dist/SceneKraft-macOS.dmg
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,2246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="color-scheme" content="dark">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&display=swap" rel="stylesheet">
+
+    <title>Ambient Desktop</title>
+
+    <style>
+        :root {
+            --black: #000000;
+            --deep: #030303;
+            --surface: #050505;
+            --line: rgba(242, 242, 240, 0.11);
+            --line-soft: rgba(242, 242, 240, 0.055);
+            --text: #f2f2f0;
+            --muted: #777777;
+            --soft: #bbbbbb;
+            --red: #ff3030;
+
+            --px: clamp(18px, 4vw, 78px);
+            --py: clamp(18px, 3.5vh, 54px);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        body {
+            color: var(--text);
+            font-family:
+                "Doto",
+                "Courier New",
+                "Lucida Console",
+                monospace;
+            font-weight: 400;
+            letter-spacing: 0.04em;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: geometricPrecision;
+
+            background:
+                radial-gradient(
+                    ellipse at 50% 43%,
+                    #111111 0%,
+                    #080808 28%,
+                    #050505 52%,
+                    #000000 100%
+                );
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.22;
+
+            background-image:
+                radial-gradient(
+                    circle,
+                    rgba(255, 255, 255, 0.13) 0.45px,
+                    transparent 0.7px
+                );
+
+            background-size: 7px 7px;
+
+            mask-image:
+                radial-gradient(
+                    ellipse at center,
+                    black 0%,
+                    rgba(0, 0, 0, 0.65) 48%,
+                    transparent 100%
+                );
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.035;
+
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent 0,
+                    transparent 3px,
+                    rgba(255, 255, 255, 0.2) 4px,
+                    transparent 5px
+                );
+        }
+
+        .wallpaper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            isolation: isolate;
+        }
+
+        .grid {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.18;
+
+            background:
+                linear-gradient(
+                    to right,
+                    transparent 49.96%,
+                    rgba(255, 255, 255, 0.025) 50%,
+                    transparent 50.04%
+                ),
+                linear-gradient(
+                    to bottom,
+                    transparent 49.96%,
+                    rgba(255, 255, 255, 0.025) 50%,
+                    transparent 50.04%
+                ),
+                repeating-linear-gradient(
+                    to right,
+                    transparent 0,
+                    transparent clamp(100px, 8vw, 180px),
+                    rgba(255, 255, 255, 0.016)
+                        clamp(100px, 8vw, 180px),
+                    rgba(255, 255, 255, 0.016)
+                        calc(clamp(100px, 8vw, 180px) + 1px)
+                ),
+                repeating-linear-gradient(
+                    to bottom,
+                    transparent 0,
+                    transparent clamp(95px, 8vh, 145px),
+                    rgba(255, 255, 255, 0.012)
+                        clamp(95px, 8vh, 145px),
+                    rgba(255, 255, 255, 0.012)
+                        calc(clamp(95px, 8vh, 145px) + 1px)
+                );
+        }
+
+        .edge {
+            position: absolute;
+            left: var(--px);
+            right: var(--px);
+            height: 1px;
+            pointer-events: none;
+
+            background:
+                linear-gradient(
+                    to right,
+                    transparent,
+                    var(--line) 7%,
+                    var(--line) 93%,
+                    transparent
+                );
+
+            opacity: 0.7;
+        }
+
+        .edge.top {
+            top: var(--py);
+        }
+
+        .edge.bottom {
+            bottom: var(--py);
+            opacity: 0.45;
+        }
+
+        .interface {
+            position: relative;
+            z-index: 2;
+
+            width: 100%;
+            height: 100%;
+
+            padding: var(--py) var(--px);
+
+            display: grid;
+
+            grid-template-columns:
+                minmax(180px, 0.72fr)
+                minmax(430px, 1.8fr)
+                minmax(180px, 0.72fr);
+
+            grid-template-rows:
+                auto
+                1fr
+                auto;
+
+            gap: clamp(12px, 2vw, 42px);
+        }
+
+        .topbar {
+            grid-column: 1 / -1;
+
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+
+            min-height: 30px;
+        }
+
+        .online {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+
+            color: #999;
+
+            font-size: clamp(8px, 0.58vw, 12px);
+            letter-spacing: 0.14em;
+        }
+
+        .led {
+            width: 5px;
+            height: 5px;
+
+            flex: 0 0 auto;
+
+            background: var(--red);
+
+            box-shadow:
+                0 0 9px rgba(255, 48, 48, 0.35);
+        }
+
+        .side {
+            min-width: 0;
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+
+            gap: clamp(28px, 5vh, 72px);
+        }
+
+        .side.left {
+            align-items: flex-start;
+        }
+
+        .side.right {
+            align-items: flex-end;
+        }
+
+        .module {
+            position: relative;
+            width: min(100%, 260px);
+        }
+
+        .side.right .module {
+            text-align: right;
+        }
+
+        .module::before {
+            content: "";
+
+            display: block;
+
+            width: 24px;
+            height: 1px;
+
+            margin-bottom: 11px;
+
+            background: var(--line);
+        }
+
+        .side.right .module::before {
+            margin-left: auto;
+        }
+
+        .module-label {
+            margin-bottom: 7px;
+
+            color: #666;
+
+            font-size: clamp(8px, 0.68vw, 13px);
+            letter-spacing: 0.16em;
+        }
+
+        .module-value {
+            color: var(--soft);
+
+            font-size: clamp(9px, 0.76vw, 15px);
+            line-height: 1.55;
+
+            letter-spacing: 0.11em;
+        }
+
+        .module-value strong {
+            color: var(--text);
+            font-weight: 400;
+        }
+
+        .microline {
+            color: #505050;
+
+            font-size: clamp(7px, 0.56vw, 11px);
+            line-height: 1.7;
+        }
+
+        .center {
+            min-width: 0;
+            min-height: 0;
+
+            display: grid;
+            place-items: center;
+        }
+
+        .clock-stack {
+            position: relative;
+
+            width: 100%;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            transform: translateY(-2%);
+        }
+
+        .clock-kicker {
+            position: absolute;
+
+            top: clamp(-31px, -2.5vh, -18px);
+            left: 50%;
+
+            transform: translateX(-50%);
+
+            color: #4b4b4b;
+
+            font-size: clamp(7px, 0.58vw, 12px);
+            letter-spacing: 0.28em;
+
+            white-space: nowrap;
+        }
+
+        .clock {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+
+            color: var(--text);
+
+            font-size: clamp(72px, 10.4vw, 215px);
+            line-height: 0.88;
+
+            letter-spacing: -0.08em;
+
+            white-space: nowrap;
+
+            font-variant-numeric: tabular-nums;
+
+            text-shadow:
+                0 0 35px rgba(255, 255, 255, 0.025);
+        }
+
+        .clock-colon {
+            color: #d5d5d3;
+            margin: 0 0.025em;
+        }
+
+        .seconds {
+            display: inline-block;
+
+            min-width: 2ch;
+
+            margin-left: clamp(8px, 1vw, 18px);
+
+            color: #555;
+
+            font-size: 0.18em;
+            letter-spacing: 0;
+        }
+
+        .ampm {
+            align-self: center;
+
+            margin-left: clamp(10px, 1.4vw, 24px);
+
+            color: #777;
+
+            font-size: clamp(10px, 1vw, 19px);
+            letter-spacing: 0.16em;
+        }
+
+        .date {
+            margin-top: clamp(24px, 4vh, 52px);
+
+            text-align: center;
+
+            font-size: clamp(10px, 0.9vw, 18px);
+            line-height: 1.75;
+
+            letter-spacing: 0.25em;
+
+            color: var(--soft);
+        }
+
+        .date-day {
+            color: var(--text);
+        }
+
+        .timezone {
+            margin-top: 5px;
+
+            color: #626262;
+
+            font-size: clamp(8px, 0.62vw, 12px);
+            letter-spacing: 0.2em;
+        }
+
+        .crosshair {
+            position: relative;
+
+            width: clamp(92px, 8vw, 150px);
+            height: clamp(92px, 8vw, 150px);
+
+            margin-top: clamp(30px, 5vh, 62px);
+
+            display: grid;
+            place-items: center;
+
+            opacity: 0.58;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: "";
+
+            position: absolute;
+
+            background: var(--line);
+        }
+
+        .crosshair::before {
+            width: 100%;
+            height: 1px;
+        }
+
+        .crosshair::after {
+            width: 1px;
+            height: 100%;
+        }
+
+        .orbit {
+            position: absolute;
+
+            width: 72%;
+            height: 72%;
+
+            border: 1px solid rgba(242, 242, 240, 0.13);
+
+            transform: rotate(24deg);
+
+            animation:
+                orbitA 15s linear infinite;
+        }
+
+        .orbit::before {
+            content: "";
+
+            position: absolute;
+
+            inset: 17%;
+
+            border: 1px solid rgba(242, 242, 240, 0.13);
+
+            transform: rotate(62deg);
+        }
+
+        .orbit.two {
+            width: 57%;
+            height: 86%;
+
+            border-color: rgba(242, 242, 240, 0.08);
+
+            transform: rotate(-38deg);
+
+            animation:
+                orbitB 19s linear infinite;
+        }
+
+        .diamond {
+            width: 15px;
+            height: 15px;
+
+            border: 1px solid #9a9a98;
+
+            transform: rotate(45deg);
+
+            animation:
+                breathe 6s ease-in-out infinite;
+        }
+
+        .core-point {
+            position: absolute;
+
+            width: 4px;
+            height: 4px;
+
+            background: var(--red);
+
+            box-shadow:
+                0 0 10px rgba(255, 48, 48, 0.4);
+
+            animation:
+                pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes orbitA {
+            from {
+                transform: rotate(24deg);
+            }
+
+            to {
+                transform: rotate(384deg);
+            }
+        }
+
+        @keyframes orbitB {
+            from {
+                transform: rotate(-38deg);
+            }
+
+            to {
+                transform: rotate(-398deg);
+            }
+        }
+
+        @keyframes breathe {
+            0%,
+            100% {
+                opacity: 0.45;
+                transform: rotate(45deg) scale(0.92);
+            }
+
+            50% {
+                opacity: 0.9;
+                transform: rotate(225deg) scale(1.06);
+            }
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 0.2;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .weather {
+            display: grid;
+
+            grid-template-columns:
+                auto
+                1fr;
+
+            column-gap: 16px;
+
+            align-items: center;
+        }
+
+        .weather-symbol {
+            position: relative;
+
+            width: 34px;
+            height: 34px;
+
+            opacity: 0.78;
+        }
+
+        .weather-symbol.sun::before {
+            content: "";
+
+            position: absolute;
+
+            width: 13px;
+            height: 13px;
+
+            left: 10px;
+            top: 10px;
+
+            border: 1px solid #aaa;
+            border-radius: 50%;
+        }
+
+        .weather-symbol.sun::after {
+            content: "+  +\A  + + +\A+  +  +";
+
+            position: absolute;
+
+            left: 1px;
+            top: 1px;
+
+            white-space: pre;
+
+            color: #777;
+
+            font-size: 9px;
+            line-height: 10px;
+        }
+
+        .weather-symbol.cloud::before {
+            content: "";
+
+            position: absolute;
+
+            left: 5px;
+            bottom: 8px;
+
+            width: 24px;
+            height: 11px;
+
+            border: 1px solid #8b8b89;
+
+            border-radius:
+                10px
+                10px
+                5px
+                5px;
+        }
+
+        .weather-symbol.cloud::after {
+            content: "";
+
+            position: absolute;
+
+            left: 11px;
+            top: 9px;
+
+            width: 10px;
+            height: 10px;
+
+            border:
+                1px solid #8b8b89;
+
+            border-radius: 50%;
+
+            border-bottom-color: transparent;
+
+            background: #050505;
+        }
+
+        .weather-symbol.rain::before {
+            content: "│ │ │";
+
+            position: absolute;
+
+            left: 6px;
+            top: 5px;
+
+            color: #8c8c8a;
+
+            font-size: 18px;
+            line-height: 24px;
+
+            letter-spacing: 4px;
+        }
+
+        .weather-symbol.storm::before {
+            content: "⌁";
+
+            position: absolute;
+
+            left: 7px;
+            top: -4px;
+
+            color: #aaa;
+
+            font-size: 32px;
+
+            transform: rotate(90deg);
+        }
+
+        .weather-temp {
+            color: var(--text);
+
+            font-size: clamp(27px, 2.25vw, 47px);
+
+            letter-spacing: -0.05em;
+
+            line-height: 1;
+        }
+
+        .weather-condition {
+            margin-top: 5px;
+
+            color: #777;
+
+            font-size: clamp(7px, 0.56vw, 11px);
+
+            letter-spacing: 0.1em;
+        }
+
+        .weather-stats {
+            grid-column: 1 / -1;
+
+            margin-top: 15px;
+            padding-top: 11px;
+
+            border-top:
+                1px solid var(--line-soft);
+
+            display: flex;
+
+            justify-content: flex-end;
+
+            gap: 14px;
+
+            color: #666;
+
+            font-size: clamp(7px, 0.52vw, 10px);
+
+            letter-spacing: 0.06em;
+        }
+
+        .weather-stats b {
+            color: #999;
+            font-weight: 400;
+        }
+
+        .battery-line {
+            display: flex;
+            align-items: center;
+
+            gap: 10px;
+
+            margin-top: 9px;
+        }
+
+        .battery-shell {
+            position: relative;
+
+            width: 68px;
+            height: 7px;
+
+            border: 1px solid #555;
+        }
+
+        .battery-shell::after {
+            content: "";
+
+            position: absolute;
+
+            right: -4px;
+            top: 2px;
+
+            width: 2px;
+            height: 3px;
+
+            background: #555;
+        }
+
+        .battery-fill {
+            position: absolute;
+
+            left: 1px;
+            top: 1px;
+            bottom: 1px;
+
+            width: 0%;
+
+            background: #aaa;
+
+            transition:
+                width 0.5s ease;
+        }
+
+        .battery-fill.charging {
+            background: var(--red);
+        }
+
+        .calendar {
+            width: min(100%, 280px);
+        }
+
+        .calendar-head {
+            display: flex;
+
+            justify-content: space-between;
+            align-items: baseline;
+
+            padding-bottom: 9px;
+            margin-bottom: 10px;
+
+            border-bottom:
+                1px solid var(--line);
+        }
+
+        .calendar-title {
+            color: var(--soft);
+
+            font-size: clamp(8px, 0.64vw, 13px);
+
+            letter-spacing: 0.13em;
+        }
+
+        .calendar-year {
+            color: #555;
+
+            font-size: clamp(7px, 0.55vw, 11px);
+        }
+
+        .calendar-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(7, 1fr);
+
+            gap: 4px 0;
+
+            text-align: center;
+
+            font-size: clamp(7px, 0.55vw, 11px);
+        }
+
+        .weekday {
+            color: #777;
+            margin-bottom: 4px;
+        }
+
+        .day {
+            position: relative;
+
+            min-height: 18px;
+
+            color: #666;
+        }
+
+        .day.current {
+            color: var(--text);
+        }
+
+        .day.current::after {
+            content: "";
+
+            position: absolute;
+
+            left: 50%;
+            bottom: -2px;
+
+            width: 4px;
+            height: 2px;
+
+            transform: translateX(-50%);
+
+            background: var(--red);
+        }
+
+        .day.empty {
+            opacity: 0;
+        }
+
+        .media-track {
+            position: relative;
+
+            width: 100%;
+            height: 1px;
+
+            margin-top: 12px;
+
+            background: #272727;
+        }
+
+        .media-track::before {
+            content: "";
+
+            position: absolute;
+
+            left: 0;
+            top: -1px;
+
+            width: 23%;
+            height: 3px;
+
+            background: #777;
+        }
+
+        .media-title {
+            color: var(--soft);
+
+            font-size: clamp(9px, 0.76vw, 15px);
+
+            white-space: nowrap;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .media-artist {
+            margin-top: 5px;
+
+            color: #5d5d5d;
+
+            font-size: clamp(7px, 0.56vw, 11px);
+
+            white-space: nowrap;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .media-state {
+            color: #555;
+
+            font-size: clamp(7px, 0.56vw, 11px);
+
+            letter-spacing: 0.12em;
+        }
+
+        .message {
+            border-left:
+                1px solid #333;
+
+            padding-left: 13px;
+        }
+
+        .message-text {
+            color: #8a8a88;
+
+            font-size: clamp(7px, 0.56vw, 11px);
+
+            line-height: 1.6;
+
+            letter-spacing: 0.11em;
+        }
+
+        .footer {
+            grid-column: 1 / -1;
+
+            display: grid;
+
+            grid-template-columns:
+                1fr
+                auto
+                1fr;
+
+            align-items: end;
+
+            gap: 20px;
+
+            min-height: 32px;
+        }
+
+        .coordinates,
+        .technical {
+            color: #4e4e4e;
+
+            font-size: clamp(7px, 0.56vw, 11px);
+
+            line-height: 1.6;
+
+            letter-spacing: 0.12em;
+        }
+
+        .technical {
+            text-align: right;
+        }
+
+        .footer-center {
+            color: #3f3f3f;
+
+            font-size: 8px;
+
+            letter-spacing: 0.3em;
+
+            text-align: center;
+
+            white-space: nowrap;
+        }
+
+        @media (max-width: 1050px) {
+            .interface {
+                grid-template-columns:
+                    minmax(145px, 0.65fr)
+                    minmax(350px, 1.7fr)
+                    minmax(145px, 0.65fr);
+            }
+
+            .side {
+                gap: 32px;
+            }
+
+            .clock {
+                font-size:
+                    clamp(62px, 9.7vw, 120px);
+            }
+        }
+
+        @media (max-width: 760px) {
+            .interface {
+                grid-template-columns:
+                    1fr 1fr;
+
+                grid-template-rows:
+                    auto
+                    auto
+                    1fr
+                    auto
+                    auto;
+
+                gap: 18px;
+
+                padding: 20px;
+            }
+
+            .topbar {
+                grid-column: 1 / -1;
+            }
+
+            .side.left {
+                grid-column: 1;
+                grid-row: 2;
+            }
+
+            .side.right {
+                grid-column: 2;
+                grid-row: 2;
+            }
+
+            .center {
+                grid-column: 1 / -1;
+                grid-row: 3;
+            }
+
+            .side .module:nth-child(n + 2) {
+                display: none;
+            }
+
+            .clock {
+                font-size:
+                    clamp(58px, 15vw, 110px);
+            }
+
+            .footer {
+                grid-row: 5;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .interface {
+                padding: 16px;
+                gap: 12px;
+            }
+
+            .clock {
+                font-size:
+                    clamp(48px, 15vw, 76px);
+            }
+
+            .seconds {
+                display: none;
+            }
+
+            .ampm {
+                font-size: 8px;
+                margin-left: 8px;
+            }
+
+            .date {
+                margin-top: 22px;
+
+                font-size: 8px;
+
+                letter-spacing: 0.18em;
+            }
+
+            .crosshair {
+                width: 62px;
+                height: 62px;
+
+                margin-top: 22px;
+            }
+
+            .footer {
+                gap: 7px;
+            }
+
+            .footer-center {
+                display: none;
+            }
+        }
+
+        @media (orientation: portrait) and (max-width: 760px) {
+            .interface {
+                grid-template-columns: 1fr;
+
+                grid-template-rows:
+                    auto
+                    auto
+                    1fr
+                    auto
+                    auto;
+            }
+
+            .side.left,
+            .side.right {
+                grid-column: 1;
+
+                width: 100%;
+
+                flex-direction: row;
+
+                justify-content: space-between;
+            }
+
+            .side.left {
+                grid-row: 2;
+            }
+
+            .center {
+                grid-row: 3;
+            }
+
+            .side.right {
+                grid-row: 4;
+            }
+
+            .side .module {
+                display: block !important;
+
+                width: 48%;
+            }
+
+            .side .module:nth-child(n + 2) {
+                display: none !important;
+            }
+
+            .footer {
+                grid-row: 5;
+            }
+
+            .clock {
+                font-size:
+                    clamp(55px, 17vw, 100px);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .orbit,
+            .diamond,
+            .core-point {
+                animation: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="wallpaper">
+
+        <div class="grid"></div>
+
+        <div class="edge top"></div>
+        <div class="edge bottom"></div>
+
+        <section class="interface">
+
+            <header class="topbar">
+                <div class="online">
+                    <span class="led"></span>
+                    <span>SYSTEM ONLINE</span>
+                </div>
+            </header>
+
+            <aside class="side left">
+
+                <div class="module">
+                    <div class="module-label">LOCATION</div>
+
+                    <div class="module-value">
+                        <strong>VADODARA</strong><br>
+                        GUJARAT / INDIA
+                    </div>
+                </div>
+
+                <div class="module">
+                    <div class="module-label">TIMEZONE</div>
+
+                    <div class="module-value">
+                        <strong>IST</strong> · UTC+05:30
+                    </div>
+                </div>
+
+                <div class="module">
+                    <div class="module-label">DEVICE</div>
+
+                    <div class="module-value">
+                        <strong id="deviceName">
+                            DESKTOP
+                        </strong><br>
+
+                        <span id="deviceState">
+                            CONNECTED
+                        </span>
+                    </div>
+                </div>
+
+                <div class="module">
+                    <div class="module-label">POWER</div>
+
+                    <div
+                        class="module-value"
+                        id="powerText"
+                    >
+                        CONNECTED
+                    </div>
+
+                    <div class="battery-line">
+
+                        <div class="battery-shell">
+                            <div
+                                class="battery-fill"
+                                id="batteryFill"
+                            ></div>
+                        </div>
+
+                        <span
+                            class="microline"
+                            id="batteryPercent"
+                        >
+                            —
+                        </span>
+
+                    </div>
+                </div>
+
+            </aside>
+
+            <section class="center">
+
+                <div class="clock-stack">
+
+                    <div class="clock-kicker">
+                        PRIMARY / TEMPORAL REFERENCE
+                    </div>
+
+                    <div
+                        class="clock"
+                        aria-live="polite"
+                    >
+
+                        <span id="hours">
+                            12
+                        </span>
+
+                        <span class="clock-colon">
+                            :
+                        </span>
+
+                        <span id="minutes">
+                            00
+                        </span>
+
+                        <span
+                            class="seconds"
+                            id="seconds"
+                        >
+                            00
+                        </span>
+
+                        <span
+                            class="ampm"
+                            id="ampm"
+                        >
+                            AM
+                        </span>
+
+                    </div>
+
+                    <div class="date">
+
+                        <div
+                            class="date-day"
+                            id="dayName"
+                        >
+                            MONDAY
+                        </div>
+
+                        <div id="dateText">
+                            07 SEPTEMBER 2026
+                        </div>
+
+                        <div class="timezone">
+                            IST · UTC+05:30
+                        </div>
+
+                    </div>
+
+                    <div class="crosshair">
+
+                        <div class="orbit"></div>
+
+                        <div class="orbit two"></div>
+
+                        <div class="diamond"></div>
+
+                        <div class="core-point"></div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            <aside class="side right">
+
+                <div class="module">
+
+                    <div class="module-label">
+                        WEATHER / VADODARA
+                    </div>
+
+                    <div class="weather">
+
+                        <div
+                            class="weather-symbol cloud"
+                            id="weatherSymbol"
+                        ></div>
+
+                        <div>
+
+                            <div
+                                class="weather-temp"
+                                id="weatherTemp"
+                            >
+                                —°
+                            </div>
+
+                            <div
+                                class="weather-condition"
+                                id="weatherCondition"
+                            >
+                                INITIALIZING
+                            </div>
+
+                        </div>
+
+                        <div class="weather-stats">
+
+                            <span>
+                                FEELS
+                                <b id="feels">—</b>
+                            </span>
+
+                            <span>
+                                HUM
+                                <b id="humidity">—</b>
+                            </span>
+
+                            <span>
+                                WIND
+                                <b id="wind">—</b>
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="module calendar">
+
+                    <div class="calendar-head">
+
+                        <div
+                            class="calendar-title"
+                            id="calendarMonth"
+                        >
+                            SEPTEMBER
+                        </div>
+
+                        <div
+                            class="calendar-year"
+                            id="calendarYear"
+                        >
+                            2026
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="calendar-grid"
+                        id="calendarGrid"
+                    ></div>
+
+                </div>
+
+                <div class="module">
+
+                    <div class="module-label">
+                        MEDIA
+                    </div>
+
+                    <div id="mediaContent">
+
+                        <div class="media-state">
+                            STANDBY
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="module message">
+
+                    <div class="module-label">
+                        SYSTEM MESSAGE
+                    </div>
+
+                    <div
+                        class="message-text"
+                        id="messageText"
+                    >
+                        ALL SYSTEMS NOMINAL
+                    </div>
+
+                </div>
+
+            </aside>
+
+            <footer class="footer">
+
+                <div class="coordinates">
+                    22.3072° N / 73.1812° E<br>
+                    VADODARA / IN
+                </div>
+
+                <div class="footer-center">
+                    DISPLAY / PRIMARY
+                </div>
+
+                <div class="technical">
+                    SCENE / 01<br>
+                    CORE / ACTIVE · SYNC / 100%
+                </div>
+
+            </footer>
+
+        </section>
+
+    </main>
+
+    <script>
+        "use strict";
+
+        /*
+         * ============================================================
+         * TIME
+         * ============================================================
+         */
+
+        const TIME_IS_URL = "https://time.is/IST";
+        const TIME_ZONE = "Asia/Kolkata";
+
+        const LATITUDE = 22.3072;
+        const LONGITUDE = 73.1812;
+
+        const $ = id => document.getElementById(id);
+
+        let timeIsOffset = 0;
+        let timeIsSynced = false;
+
+        const timeFormatter =
+            new Intl.DateTimeFormat(
+                "en-US",
+                {
+                    timeZone: TIME_ZONE,
+                    hour: "numeric",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hourCycle: "h12"
+                }
+            );
+
+        const dateFormatter =
+            new Intl.DateTimeFormat(
+                "en-US",
+                {
+                    timeZone: TIME_ZONE,
+                    weekday: "long",
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric"
+                }
+            );
+
+        function getISTParts(date = new Date()) {
+            const timeParts = {};
+            const dateParts = {};
+
+            for (
+                const part of
+                timeFormatter.formatToParts(date)
+            ) {
+                if (part.type !== "literal") {
+                    timeParts[part.type] = part.value;
+                }
+            }
+
+            for (
+                const part of
+                dateFormatter.formatToParts(date)
+            ) {
+                if (part.type !== "literal") {
+                    dateParts[part.type] = part.value;
+                }
+            }
+
+            return {
+                hour: timeParts.hour,
+                minute: timeParts.minute,
+                second: timeParts.second,
+                dayPeriod: timeParts.dayPeriod.toUpperCase(),
+                day: Number(dateParts.day),
+                month: dateParts.month,
+                year: Number(dateParts.year),
+                weekday: dateParts.weekday
+            };
+        }
+
+        function getCurrentDisplayDate() {
+            if (timeIsSynced) {
+                return new Date(
+                    Date.now() + timeIsOffset
+                );
+            }
+
+            return new Date();
+        }
+
+        function updateClock() {
+            const p =
+                getISTParts(
+                    getCurrentDisplayDate()
+                );
+
+            $("hours").textContent =
+                p.hour.padStart(2, "0");
+
+            $("minutes").textContent =
+                p.minute;
+
+            $("seconds").textContent =
+                p.second;
+
+            $("ampm").textContent =
+                p.dayPeriod;
+
+            $("dayName").textContent =
+                p.weekday.toUpperCase();
+
+            $("dateText").textContent =
+                `${String(p.day).padStart(2, "0")} ` +
+                `${p.month.toUpperCase()} ` +
+                `${p.year}`;
+
+            updateCalendar(
+                p.year,
+                p.month,
+                p.day
+            );
+        }
+
+        async function syncWithTimeIs() {
+            try {
+                const controller =
+                    new AbortController();
+
+                const timeout =
+                    setTimeout(
+                        () => controller.abort(),
+                        7000
+                    );
+
+                const response =
+                    await fetch(
+                        TIME_IS_URL,
+                        {
+                            method: "GET",
+                            cache: "no-store",
+                            mode: "cors",
+                            signal: controller.signal
+                        }
+                    );
+
+                clearTimeout(timeout);
+
+                if (!response.ok) {
+                    throw new Error(
+                        "Time.is unavailable"
+                    );
+                }
+
+                const html =
+                    await response.text();
+
+                const matches =
+                    html.match(
+                        /\b\d{1,2}:\d{2}:\d{2}\b/g
+                    );
+
+                if (!matches || !matches.length) {
+                    throw new Error(
+                        "Time not found"
+                    );
+                }
+
+                const clock =
+                    matches[0]
+                        .split(":")
+                        .map(Number);
+
+                if (
+                    clock.length !== 3 ||
+                    clock[0] > 23 ||
+                    clock[1] > 59 ||
+                    clock[2] > 59
+                ) {
+                    throw new Error(
+                        "Invalid remote time"
+                    );
+                }
+
+                const local =
+                    getISTParts(new Date());
+
+                const local24 =
+                    to24Hour(
+                        local.hour,
+                        local.dayPeriod
+                    );
+
+                const localWall =
+                    Date.UTC(
+                        local.year,
+                        monthIndex(local.month),
+                        local.day,
+                        local24,
+                        Number(local.minute),
+                        Number(local.second)
+                    );
+
+                const remoteWall =
+                    Date.UTC(
+                        local.year,
+                        monthIndex(local.month),
+                        local.day,
+                        clock[0],
+                        clock[1],
+                        clock[2]
+                    );
+
+                timeIsOffset =
+                    remoteWall - localWall;
+
+                timeIsSynced = true;
+
+            } catch (error) {
+                timeIsSynced = false;
+            }
+        }
+
+        function monthIndex(name) {
+            const months = [
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            ];
+
+            return months.indexOf(name);
+        }
+
+        function to24Hour(hour, period) {
+            let h = Number(hour);
+
+            if (period === "AM") {
+                if (h === 12) {
+                    h = 0;
+                }
+            } else {
+                if (h !== 12) {
+                    h += 12;
+                }
+            }
+
+            return h;
+        }
+
+        /*
+         * ============================================================
+         * CALENDAR
+         * ============================================================
+         */
+
+        function updateCalendar(
+            year,
+            monthName,
+            currentDay
+        ) {
+            const month =
+                monthIndex(monthName);
+
+            const firstDay =
+                new Date(
+                    Date.UTC(
+                        year,
+                        month,
+                        1
+                    )
+                ).getUTCDay();
+
+            const daysInMonth =
+                new Date(
+                    Date.UTC(
+                        year,
+                        month + 1,
+                        0
+                    )
+                ).getUTCDate();
+
+            $("calendarMonth").textContent =
+                monthName.toUpperCase();
+
+            $("calendarYear").textContent =
+                year;
+
+            const grid =
+                $("calendarGrid");
+
+            grid.innerHTML = "";
+
+            [
+                "MO",
+                "TU",
+                "WE",
+                "TH",
+                "FR",
+                "SA",
+                "SU"
+            ].forEach(day => {
+                const el =
+                    document.createElement("div");
+
+                el.className = "weekday";
+                el.textContent = day;
+
+                grid.appendChild(el);
+            });
+
+            const mondayOffset =
+                (firstDay + 6) % 7;
+
+            for (
+                let i = 0;
+                i < mondayOffset;
+                i++
+            ) {
+                const el =
+                    document.createElement("div");
+
+                el.className = "day empty";
+                el.textContent = "00";
+
+                grid.appendChild(el);
+            }
+
+            for (
+                let day = 1;
+                day <= daysInMonth;
+                day++
+            ) {
+                const el =
+                    document.createElement("div");
+
+                el.className =
+                    "day" +
+                    (
+                        day === currentDay
+                            ? " current"
+                            : ""
+                    );
+
+                el.textContent =
+                    String(day).padStart(2, "0");
+
+                grid.appendChild(el);
+            }
+        }
+
+        /*
+         * ============================================================
+         * WEATHER
+         * ============================================================
+         */
+
+        const WEATHER_CODES = {
+            0: ["CLEAR", "sun"],
+            1: ["MOSTLY CLEAR", "sun"],
+            2: ["PARTLY CLOUDY", "cloud"],
+            3: ["OVERCAST", "cloud"],
+
+            45: ["FOG", "cloud"],
+            48: ["RIME FOG", "cloud"],
+
+            51: ["DRIZZLE", "rain"],
+            53: ["DRIZZLE", "rain"],
+            55: ["DRIZZLE", "rain"],
+
+            56: ["FREEZING DRIZZLE", "rain"],
+            57: ["FREEZING DRIZZLE", "rain"],
+
+            61: ["RAIN", "rain"],
+            63: ["RAIN", "rain"],
+            65: ["HEAVY RAIN", "rain"],
+
+            66: ["FREEZING RAIN", "rain"],
+            67: ["FREEZING RAIN", "rain"],
+
+            71: ["SNOW", "cloud"],
+            73: ["SNOW", "cloud"],
+            75: ["HEAVY SNOW", "cloud"],
+            77: ["SNOW GRAINS", "cloud"],
+
+            80: ["SHOWERS", "rain"],
+            81: ["SHOWERS", "rain"],
+            82: ["HEAVY SHOWERS", "rain"],
+
+            85: ["SNOW SHOWERS", "cloud"],
+            86: ["SNOW SHOWERS", "cloud"],
+
+            95: ["THUNDERSTORM", "storm"],
+            96: ["STORM / HAIL", "storm"],
+            99: ["STORM / HAIL", "storm"]
+        };
+
+        function weatherOffline() {
+            $("weatherTemp").textContent = "—°";
+
+            $("weatherCondition").textContent =
+                "WEATHER / OFFLINE";
+
+            $("feels").textContent = "—";
+            $("humidity").textContent = "—";
+            $("wind").textContent = "—";
+
+            $("weatherSymbol").className =
+                "weather-symbol";
+        }
+
+        async function fetchWeather() {
+            const url =
+                "https://api.open-meteo.com/v1/forecast" +
+                "?latitude=22.3072" +
+                "&longitude=73.1812" +
+                "&current=" +
+                "temperature_2m," +
+                "relative_humidity_2m," +
+                "apparent_temperature," +
+                "weather_code," +
+                "wind_speed_10m" +
+                "&temperature_unit=celsius" +
+                "&wind_speed_unit=kmh" +
+                "&timezone=Asia%2FKolkata";
+
+            try {
+                const controller =
+                    new AbortController();
+
+                const timeout =
+                    setTimeout(
+                        () => controller.abort(),
+                        10000
+                    );
+
+                const response =
+                    await fetch(
+                        url,
+                        {
+                            method: "GET",
+                            cache: "no-store",
+                            signal: controller.signal
+                        }
+                    );
+
+                clearTimeout(timeout);
+
+                if (!response.ok) {
+                    throw new Error(
+                        "Weather unavailable"
+                    );
+                }
+
+                const data =
+                    await response.json();
+
+                if (!data.current) {
+                    throw new Error(
+                        "No weather data"
+                    );
+                }
+
+                const current =
+                    data.current;
+
+                const code =
+                    Number(current.weather_code);
+
+                const weather =
+                    WEATHER_CODES[code] ||
+                    ["CONDITIONS", "cloud"];
+
+                $("weatherTemp").textContent =
+                    `${Math.round(
+                        Number(current.temperature_2m)
+                    )}°`;
+
+                $("weatherCondition").textContent =
+                    weather[0];
+
+                $("feels").textContent =
+                    `${Math.round(
+                        Number(current.apparent_temperature)
+                    )}°`;
+
+                $("humidity").textContent =
+                    `${Math.round(
+                        Number(current.relative_humidity_2m)
+                    )}%`;
+
+                $("wind").textContent =
+                    `${Math.round(
+                        Number(current.wind_speed_10m)
+                    )}`;
+
+                $("weatherSymbol").className =
+                    `weather-symbol ${weather[1]}`;
+
+            } catch (error) {
+                weatherOffline();
+            }
+        }
+
+        /*
+         * ============================================================
+         * BATTERY
+         * ============================================================
+         */
+
+        function setupBattery() {
+            if (!navigator.getBattery) {
+                $("powerText").textContent =
+                    "CONNECTED";
+
+                $("batteryPercent").textContent =
+                    "—";
+
+                $("batteryFill").style.width =
+                    "0%";
+
+                return;
+            }
+
+            navigator.getBattery()
+                .then(battery => {
+
+                    function renderBattery() {
+                        const percent =
+                            Math.round(
+                                battery.level * 100
+                            );
+
+                        const charging =
+                            battery.charging;
+
+                        $("batteryPercent")
+                            .textContent =
+                            `${percent}%`;
+
+                        $("batteryFill")
+                            .style.width =
+                            `${percent}%`;
+
+                        $("batteryFill")
+                            .classList
+                            .toggle(
+                                "charging",
+                                charging
+                            );
+
+                        $("powerText")
+                            .textContent =
+                            charging
+                                ? "CHARGING"
+                                : "CONNECTED";
+                    }
+
+                    renderBattery();
+
+                    battery.addEventListener(
+                        "levelchange",
+                        renderBattery
+                    );
+
+                    battery.addEventListener(
+                        "chargingchange",
+                        renderBattery
+                    );
+
+                })
+                .catch(() => {
+
+                    $("powerText")
+                        .textContent =
+                        "CONNECTED";
+
+                    $("batteryPercent")
+                        .textContent =
+                        "—";
+                });
+        }
+
+        /*
+         * ============================================================
+         * DEVICE / NETWORK
+         * ============================================================
+         */
+
+        function setupDevice() {
+            const platform =
+                navigator.userAgentData?.platform ||
+                navigator.platform ||
+                "";
+
+            let device = "DESKTOP";
+
+            if (/Android/i.test(platform)) {
+                device = "ANDROID";
+
+            } else if (
+                /iPhone|iPad|iPod/i.test(
+                    navigator.userAgent
+                )
+            ) {
+                device = "MOBILE";
+
+            } else if (/Mac/i.test(platform)) {
+                device = "MAC";
+
+            } else if (/Win/i.test(platform)) {
+                device = "WINDOWS";
+
+            } else if (/Linux/i.test(platform)) {
+                device = "LINUX";
+            }
+
+            $("deviceName").textContent =
+                device;
+
+            updateNetwork();
+        }
+
+        function updateNetwork() {
+            const online =
+                navigator.onLine;
+
+            $("deviceState").textContent =
+                online
+                    ? "CONNECTED"
+                    : "LOCAL / OFFLINE";
+
+            $("messageText").textContent =
+                online
+                    ? "ALL SYSTEMS NOMINAL"
+                    : "NETWORK OFFLINE / LOCAL MODE";
+        }
+
+        /*
+         * ============================================================
+         * MEDIA SESSION
+         * ============================================================
+         */
+
+        function setupMediaSession() {
+            const content =
+                $("mediaContent");
+
+            if (!("mediaSession" in navigator)) {
+                content.innerHTML =
+                    '<div class="media-state">' +
+                    'STANDBY' +
+                    '</div>';
+
+                return;
+            }
+
+            function renderMedia() {
+                const metadata =
+                    navigator.mediaSession.metadata;
+
+                const state =
+                    navigator.mediaSession.playbackState;
+
+                if (
+                    !metadata ||
+                    state !== "playing"
+                ) {
+                    content.innerHTML =
+                        '<div class="media-state">' +
+                        'IDLE / NO ACTIVE MEDIA' +
+                        '</div>';
+
+                    return;
+                }
+
+                const title =
+                    metadata.title ||
+                    "UNTITLED";
+
+                const artist =
+                    metadata.artist ||
+                    "UNKNOWN ARTIST";
+
+                content.innerHTML =
+                    '<div class="media-title">' +
+                    '▶ ' +
+                    escapeHTML(title) +
+                    '</div>' +
+
+                    '<div class="media-artist">' +
+                    escapeHTML(artist) +
+                    '</div>' +
+
+                    '<div class="media-track"></div>';
+
+                $("messageText")
+                    .textContent =
+                    "MEDIA / NOW PLAYING";
+            }
+
+            renderMedia();
+
+            setInterval(
+                renderMedia,
+                2000
+            );
+        }
+
+        function escapeHTML(value) {
+            return String(value)
+                .replaceAll(
+                    "&",
+                    "&amp;"
+                )
+                .replaceAll(
+                    "<",
+                    "&lt;"
+                )
+                .replaceAll(
+                    ">",
+                    "&gt;"
+                )
+                .replaceAll(
+                    '"',
+                    "&quot;"
+                )
+                .replaceAll(
+                    "'",
+                    "&#039;"
+                );
+        }
+
+        /*
+         * ============================================================
+         * INITIALIZATION
+         * ============================================================
+         */
+
+        function initialize() {
+            setupDevice();
+
+            setupBattery();
+
+            setupMediaSession();
+
+            updateClock();
+
+            syncWithTimeIs();
+
+            fetchWeather();
+
+            setInterval(
+                updateClock,
+                1000
+            );
+
+            setInterval(
+                syncWithTimeIs,
+                5 * 60 * 1000
+            );
+
+            setInterval(
+                fetchWeather,
+                12 * 60 * 1000
+            );
+
+            window.addEventListener(
+                "online",
+                updateNetwork
+            );
+
+            window.addEventListener(
+                "offline",
+                updateNetwork
+            );
+        }
+
+        initialize();
+    </script>
+</body>
+</html>
