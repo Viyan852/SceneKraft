@@ -1,4 +1,4 @@
-name: Build SceneKraft (macOS)
+name: Build macOS
 
 on:
   push:
@@ -11,73 +11,37 @@ permissions:
 
 jobs:
   build:
-    name: Build macOS DMG
     runs-on: macos-latest
-
+    
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
+      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
-          python -m pip install pyinstaller
-
-      - name: Build macOS app
+          pip install -r requirements.txt
+          pip install pyinstaller
+      
+      - name: Build App
         run: |
-          pyinstaller --clean --noconfirm \
-            --name SceneKraft \
-            --onedir \
-            --windowed \
-            --icon=favicon.ico \
-            app.py
-
-      - name: Verify app
-        run: |
-          if [ ! -d "dist/SceneKraft.app" ]; then
-            echo "SceneKraft.app was not created."
-            exit 1
-          fi
-          echo "Build successful"
-          ls -lah dist/SceneKraft.app
-
+          pyinstaller --onedir --windowed --icon=favicon.ico app.py
+      
       - name: Create DMG
         run: |
           mkdir -p dist_dmg
           cp -R dist/SceneKraft.app dist_dmg/
-          hdiutil create \
-            -volname "SceneKraft" \
-            -srcfolder dist_dmg \
-            -ov \
-            -format UDZO \
-            dist/SceneKraft-macOS.dmg
-
-      - name: Verify DMG
-        run: |
-          if [ ! -f "dist/SceneKraft-macOS.dmg" ]; then
-            echo "SceneKraft-macOS.dmg was not created."
-            exit 1
-          fi
-          ls -lh dist/SceneKraft-macOS.dmg
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: SceneKraft-macOS
-          path: dist/SceneKraft-macOS.dmg
-          if-no-files-found: error
-
-      - name: Create GitHub Release
+          hdiutil create -volname "SceneKraft" -srcfolder dist_dmg -ov -format UDZO dist/SceneKraft-macOS.dmg
+      
+      - name: Upload Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
           files: dist/SceneKraft-macOS.dmg
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
